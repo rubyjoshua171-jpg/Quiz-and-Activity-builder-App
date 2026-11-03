@@ -7,7 +7,7 @@ export const GenerateRequestSchema = z.object({
   chat: z
     .array(z.object({ role: z.enum(["teacher", "assistant"]), text: z.string() }))
     .default([]),                                 // chat so far (empty on first go)
-  currentActivity: ActivitySchema.nullable(),     // null on first go, whole activity on refine
+    currentActivity: ActivitySchema.nullable().default(null), // null on first go, whole activity on refine
 });
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
 
