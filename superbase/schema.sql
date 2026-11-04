@@ -22,3 +22,16 @@ create policy "teachers update own activities" on public.activities
 
 create policy "teachers delete own activities" on public.activities
   for delete to authenticated using (owner_id = (select auth.uid()));
+  -- Public read-only loading for the /a/<id> share link
+create or replace function public.get_public_activity(activity_id uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select content from public.activities where id = activity_id;
+$$;
+
+revoke all on function public.get_public_activity(uuid) from public;
+grant execute on function public.get_public_activity(uuid) to anon, authenticated;
