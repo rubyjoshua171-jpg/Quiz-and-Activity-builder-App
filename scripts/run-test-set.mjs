@@ -39,4 +39,5 @@ for (const [i, t] of tests.entries()) {
   const a = data.activity;
   const size = a ? (a.questions ?? a.statements ?? a.cards ?? a.pairs ?? a.items ?? []).length : "-";
   console.log(`${i + 1}. [${t.type}] ${data.ok ? "OK" : "ERROR"} | items: ${size} | ${data.ok ? a.title : data.error}`);
+  await new Promise((resolve) => setTimeout(resolve, 6000));
 }

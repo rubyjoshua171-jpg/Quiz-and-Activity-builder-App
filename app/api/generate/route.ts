@@ -4,7 +4,7 @@ import {
   type GenerateResponse,
 } from "@/shared/generate-contract";
 import { SAMPLES } from "@/shared/samples";
-import { generateWithClaude } from "@/lib/generate/claude";
+import { generateActivity } from "@/lib/generate/provider";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
   // Real AI comes next.
     try {
-    const activity = await generateWithClaude(req);
+        const activity = await generateActivity(req);
     return NextResponse.json<GenerateResponse>({ ok: true, activity });
   } catch (error) {
     console.error("generate failed:", error); // details stay on the server
