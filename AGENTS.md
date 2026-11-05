@@ -12,3 +12,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - The /api/generate request and response format is in `shared/generate-contract.ts`.
 - Sample activities for fake mode are in `shared/samples.ts`.
 - The prompt and the Claude call live in `lib/generate/`.
+- Run the tests with `npm test`. They also run automatically on every pull request.
