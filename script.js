@@ -1,7 +1,9 @@
 // Neuronest is a client-side learning activity demo.
 // Activities are stored locally so the static app works without a backend.
+// Finds the HTML element where every application screen is rendered.
 const app = document.getElementById('app');
 
+// Defines the activity types available in the activity builder.
 const types = [
   ['mc', 'Multiple Choice', 'Pick one correct answer from four options.', '▣', 'Plant cells and photosynthesis'],
   ['tf', 'True / False', 'Decide whether each statement is true or false.', '✓', 'Photosynthesis'],
@@ -13,6 +15,7 @@ const types = [
   ['crossword', 'Crossword', 'Review key vocabulary with a crossword.', '＋', 'Introduction to biology']
 ];
 
+// Provides sample questions for the client-side demo generator.
 const samples = {
   mc: [{ q: 'What is the powerhouse of the cell?', a: ['Nucleus', 'Mitochondria', 'Ribosome', 'Cell wall'], correct: 1 }],
   tf: [{ q: 'Plants produce oxygen.', a: ['True', 'False'], correct: 0 }],
@@ -24,6 +27,7 @@ const samples = {
   crossword: [{ q: 'A green pigment in plants.', a: ['Chlorophyll'], correct: 0 }]
 };
 
+// Stores the current route, activity selection, question progress, and score.
 let state = {
   route: location.hash.slice(1) || 'landing',
   type: 'mc',
@@ -35,10 +39,13 @@ let state = {
   score: 0
 };
 
+// Allows only known application routes to be rendered.
 const appRoutes = new Set(['landing', 'login', 'signup', 'dashboard', 'activities', 'create', 'editor', 'preview', 'play', 'results', 'share', 'shared', 'profile', 'settings', 'how']);
 
+// Identifies landing-page anchors that should scroll instead of changing screens.
 const sections = new Set(['features', 'how', 'faq']);
 
+// Reads saved activities without allowing malformed localStorage data to crash the app.
 function readActivities() {
   try {
     const saved = JSON.parse(localStorage.getItem('neuroActs') || '[]');
@@ -48,6 +55,7 @@ function readActivities() {
   }
 }
 
+// Opens only approved external protocols in a protected new window.
 function safeOpen(url) {
   try {
     const parsed = new URL(url, location.href);
@@ -60,12 +68,14 @@ function safeOpen(url) {
   }
 }
 
+// Escapes user-provided text before inserting it into generated HTML.
 function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[char]));
 }
 
+// Changes the current application route and renders the new screen.
 function go(route) {
   if (sections.has(route)) {
     state.route = 'landing';
@@ -83,6 +93,7 @@ function go(route) {
   window.scrollTo(0, 0);
 }
 
+// Displays a short status message in the accessible toast region.
 function toast(message) {
   const node = document.getElementById('toast');
   node.textContent = message;
@@ -90,14 +101,17 @@ function toast(message) {
   window.setTimeout(() => node.classList.remove('show'), 2200);
 }
 
+// Returns the reusable Neuronest brand markup.
 function logo() {
   return '<div class="brand"><b>N</b><span>NEURONEST</span></div>';
 }
 
+// Returns a small text icon for sidebar navigation.
 function icon(name) {
   return { home: '⌂', list: '▤', add: '＋', share: '↗', user: '♙', settings: '⚙' }[name] || '✦';
 }
 
+// Builds the dashboard sidebar and its navigation buttons.
 function side() {
   return '<aside class="sidebar">' + logo() +
     '<nav class="side-nav">' +
@@ -110,14 +124,17 @@ function side() {
     '</nav><button class="btn ghost logout" data-go="landing">⇥ Log out</button></aside>';
 }
 
+// Wraps dashboard content with the sidebar and main content area.
 function shell(content) {
   return '<div class="layout">' + side() + '<main class="main">' + content + '</main></div>';
 }
 
+// Builds a consistent page heading with an optional action button.
 function head(title, subtitle, action = '') {
   return '<div class="head"><div><h1>' + title + '</h1><p>' + subtitle + '</p></div>' + action + '</div>';
 }
 
+// Builds the public landing page and its informational sections.
 function landing() {
   return '<header class="topbar">' + logo() +
     '<nav class="links"><a href="#features">Features</a><a href="#how">How it works</a><a href="#faq">FAQ</a></nav>' +
@@ -136,6 +153,7 @@ function landing() {
     '<section class="info-section" id="faq"><h2>Frequently asked questions</h2><p>This static demo keeps your activities in this browser. Production authentication and server-side security must be provided by a backend.</p></section>';
 }
 
+// Builds the demo login or signup form.
 function auth(signup) {
   return '<div class="auth"><section class="auth-side">' + logo() + '<h1>' +
     (signup ? 'Make learning feel effortless.' : 'Your classroom, made creative.') +
@@ -149,6 +167,7 @@ function auth(signup) {
     '<p class="muted center">' + (signup ? 'Already have an account? <a data-go="login">Log in</a>' : 'Don’t have an account? <a data-go="signup">Sign up</a>') + '</p></form></section></div>';
 }
 
+// Builds the dashboard and displays saved activities and summary statistics.
 function dashboard() {
   const activities = readActivities();
   return shell(head('Welcome back, Teacher!', 'Create, manage and share engaging learning activities.', '<button class="btn primary" data-go="create">＋ Create New Activity</button>') +
@@ -157,6 +176,7 @@ function dashboard() {
     '<h2 class="section">Recent Activities</h2>' + rows(activities.slice(-4).reverse()));
 }
 
+// Converts saved activities into dashboard activity rows.
 function rows(items) {
   if (!items.length) return '<div class="card muted">Your recent activities will appear here. Create your first activity to get started.</div>';
   return items.map(item => '<div class="activity"><div class="icon">' + (types.find(type => type[0] === item.type)?.[3] || '▣') + '</div>' +
@@ -164,6 +184,7 @@ function rows(items) {
     '<button class="btn soft small" data-go="editor">Edit</button><button class="btn outline small" data-go="share">Share</button></div>').join('');
 }
 
+// Builds the activity-type and activity-settings form.
 function create() {
   return shell(head('Create a New Activity', 'Choose an activity type, then tell AI what you want to teach.') +
     '<h2 class="section">1. Choose an activity type</h2><div class="types">' + types.map(type =>
@@ -173,6 +194,7 @@ function create() {
     '<button class="btn primary" id="generate">✦ Generate Activity</button></div>');
 }
 
+// Creates sample activity items and saves the activity locally.
 function generate() {
   state.topic = document.getElementById('topic').value.trim() || types.find(type => type[0] === state.type)[4];
   state.count = Number(document.getElementById('count').value);
@@ -188,6 +210,7 @@ function generate() {
   go('preview');
 }
 
+// Builds the screen used to answer one activity question at a time.
 function preview() {
   const item = state.items[state.q] || samples[state.type][0];
   const total = state.items.length || 1;
@@ -196,6 +219,7 @@ function preview() {
     '<h2>' + esc(item.q) + '</h2>' + item.a.map((answer, index) => '<button class="answer" data-answer="' + index + '">' + esc(answer) + '</button>').join('') + '</div>');
 }
 
+// Builds the score summary and result actions after the final answer.
 function results() {
   const total = state.items.length || 1;
   const percentage = Math.round((state.score / total) * 100);
@@ -206,6 +230,7 @@ function results() {
     '<div class="result-actions"><button class="btn primary" data-go="preview">Review answers</button><button class="btn soft" id="retry">Try again</button><button class="btn outline" id="download">Download PDF</button><button class="btn outline" data-go="share">Share results</button></div></div>');
 }
 
+// Creates a minimal PDF Blob containing the activity result summary.
 function makePdf() {
   const total = state.items.length || 1;
   const percentage = Math.round((state.score / total) * 100);
@@ -221,6 +246,7 @@ function makePdf() {
   return new Blob([pdf], { type: 'application/pdf' });
 }
 
+// Builds the share page, public URL, QR code, and sharing controls.
 function share() {
   const url = location.origin + location.pathname + '#play';
   const qr = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=12&data=' + encodeURIComponent(url);
@@ -230,9 +256,13 @@ function share() {
     '<div class="share-options"><button class="share-option" data-share="email">✉ Email</button><button class="share-option" data-share="whatsapp">◉ WhatsApp</button><button class="share-option" data-share="facebook">f Facebook</button><button class="share-option" data-share="native">↗ More options</button></div><button class="btn primary wide" data-go="preview">Preview activity</button></div></div>');
 }
 
+// Builds the activity editor summary screen.
 function editor() { return shell(head('Edit activity', 'Make changes before your students begin.') + '<div class="card"><h2>' + esc(state.topic || 'Learning activity') + '</h2><p class="muted">' + state.items.length + ' questions generated. Choose Preview to play it.</p><button class="btn primary" data-go="preview">Preview activity</button></div>'); }
+
+// Maps route names to the functions that render each screen.
 function routes() { return { landing, login: () => auth(false), signup: () => auth(true), dashboard, activities: dashboard, create, editor, preview, play: preview, results, share, shared: share, profile: dashboard, settings: dashboard, how: landing }; }
 
+// Connects buttons, forms, answer choices, downloads, clipboard actions, and sharing controls.
 function bind() {
   document.querySelectorAll('[data-go]').forEach(button => button.onclick = event => { event.preventDefault(); go(button.dataset.go); });
   document.querySelectorAll('[data-type]').forEach(button => button.onclick = () => { state.type = button.dataset.type; render(); });
@@ -272,10 +302,13 @@ function bind() {
   document.querySelectorAll('[data-share]').forEach(button => button.onclick = () => { const url = encodeURIComponent(document.getElementById('url').textContent); const targets = { email: 'mailto:?subject=Try this activity&body=' + url, whatsapp: 'https://wa.me/?text=' + url, facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + url }; if (button.dataset.share === 'native' && navigator.share) { navigator.share({ title: 'Neuronest activity', url: decodeURIComponent(url) }).catch(() => {}); } else if (targets[button.dataset.share]) { safeOpen(targets[button.dataset.share]); } });
 }
 
+// Renders the current route and reconnects handlers after the HTML is replaced.
 function render() { const view = routeViews()[state.route] || landing; app.innerHTML = view(); bind(); }
 
+// Returns the route-to-render-function map used by render.
 function routeViews() { return { landing, login: () => auth(false), signup: () => auth(true), dashboard, activities: dashboard, create, editor, preview, play: preview, results, share, shared: share, profile: dashboard, settings: dashboard, how: landing }; }
 
+// Handles browser back and forward navigation through URL hash changes.
 function handleLocationChange() {
   const hash = location.hash.slice(1);
   if (sections.has(hash)) {
@@ -288,5 +321,8 @@ function handleLocationChange() {
   render();
 }
 
+// Keeps the interface synchronized with browser hash navigation.
 window.addEventListener('hashchange', handleLocationChange);
+
+// Renders the initial screen when the script loads.
 render();
