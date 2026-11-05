@@ -16,7 +16,7 @@ Multiple choice, true or false, flashcards, matching pairs, and put in order.
 Teacher's request
       |
       v
-POST /api/generate  --->  Claude (claude-sonnet-5-5)
+POST /api/generate  --->  the AI (Gemini for now)
       |                        |
       |                  JSON content for the chosen type
       |                        |
@@ -41,7 +41,7 @@ POST /api/generate  --->  Claude (claude-sonnet-5-5)
 |---|---|
 | App and server function | Next.js, TypeScript |
 | Login and database | Supabase (with row-level security) |
-| AI | Claude API, `claude-sonnet-5-5` |
+| AI | Google Gemini for now (a Claude key may come later) |
 | Content shapes and validation | Zod |
 | Tests | Vitest, run automatically by GitHub Actions |
 | Hosting | Vercel |
@@ -68,8 +68,11 @@ POST /api/generate  --->  Claude (claude-sonnet-5-5)
 | `NEXT_PUBLIC_SUPABASE_URL` | The address of the Supabase project |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The public (publishable) Supabase key. It is safe in the browser because row-level security protects the data. |
 | `SUPABASE_SERVICE_ROLE_KEY` | The secret Supabase key. Server only. Never commit it or share it. |
-| `ANTHROPIC_API_KEY` | The AI key. Server only. Never commit it or share it. |
+| | `ANTHROPIC_API_KEY` | The Claude key. Only needed if `AI_PROVIDER=claude`. Server only. Never commit it or share it. |
 | `TEST_TEACHER1_EMAIL`, `TEST_TEACHER1_PASSWORD`, `TEST_TEACHER2_EMAIL`, `TEST_TEACHER2_PASSWORD` | Two test teacher accounts, used only by the security test scripts |
+| `AI_PROVIDER` | `gemini` (the default) or `claude` |
+| `GEMINI_API_KEY` | The Google AI Studio key. Server only. Never commit it or share it. |
+| `GEMINI_MODEL` | Optional. Leave it empty to use the built-in models (`gemini-3.1-flash-lite`, then `gemini-3.5-flash`). |
 
 ### Database
 
@@ -99,7 +102,7 @@ The test set of 10 realistic teacher requests is in `docs/test-set.md`. Run it w
 ```
 app/                     screens, templates and the share page (front end)
 app/api/generate/        the /api/generate route
-lib/generate/            prompt, Claude call, content checks, retry
+lib/generate/            prompt, AI calls (Gemini and Claude), content checks, retry
 lib/supabase/            Supabase client and public activity loading
 shared/                  schemas, request format and sample activities
 supabase/schema.sql      the database setup
@@ -119,13 +122,13 @@ docs/                    team documentation
 - **Public share links use one database function** that returns a single activity by its id. The table itself stays locked, so visitors cannot browse it.
 - **Fake mode** so screen work never spends money or waits on the AI.
 - **Secrets stay on the server.** `.env` files are ignored by Git, and the AI and secret Supabase keys are never in browser code.
+- **Two AI providers behind one switch.** Gemini is used now (our supervisor asked groups to use a Google key), and the Claude code is kept ready. `AI_PROVIDER` chooses between them, and the rest of the app doesn't care which one runs.
+- **A busy or capped AI should not break a request.** The Gemini call waits and retries when the AI is busy, and falls back to a second model if the first is busy or out of free quota.
 
 ## Status
 
-- Working and tested: fake mode, content checks, retry logic (tested with a simulated AI), row-level security, public activity loading.
-- Written but not yet tested with the real AI: the Claude call and the retry with real replies.
-- Deployed on Vercel in fake mode, so the live app returns sample activities.
-- Still to do: switch the live app to the real AI and run the full test set against it.
+- Working and tested: fake mode, content checks, retry logic (automated tests), row-level security, public activity loading, and the real AI call with Gemini. The fallback models and the wait-and-retry for a busy AI were checked by hand, not by automated tests.
+- Still to do: switch the live app to the real AI, and test the Claude call once a Claude key is available.
 
 ## Team
 
