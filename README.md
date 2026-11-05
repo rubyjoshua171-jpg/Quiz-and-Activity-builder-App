@@ -4,7 +4,7 @@ A web app that lets teachers create learning activities with AI. A teacher descr
 
 This is Option 1 (Quiz and Activity Builder): the AI writes **content only**, as JSON, and our own templates display it. The AI never writes code or HTML.
 
-**Live app:** _(add the link once it is deployed)_
+**Live app:** https://quiz-and-activity-builder-app-teal.vercel.app (currently in fake mode, so it returns sample activities)
 
 ## Activity types
 
@@ -124,7 +124,8 @@ docs/                    team documentation
 
 - Working and tested: fake mode, content checks, retry logic (tested with a simulated AI), row-level security, public activity loading.
 - Written but not yet tested with the real AI: the Claude call and the retry with real replies.
-- Still to do: deployment, the full test set run with the real AI.
+- Deployed on Vercel in fake mode, so the live app returns sample activities.
+- Still to do: switch the live app to the real AI and run the full test set against it.
 
 ## Team
 
