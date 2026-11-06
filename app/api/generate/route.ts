@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getUserFromRequest } from "@/lib/auth/require-user";
 import {
   GenerateRequestSchema,
   type GenerateResponse,
@@ -7,6 +8,14 @@ import { SAMPLES } from "@/shared/samples";
 import { generateActivity } from "@/lib/generate/provider";
 
 export async function POST(request: Request) {
+  const user = await getUserFromRequest(request);
+  if (!user) {
+    return NextResponse.json<GenerateResponse>(
+      { ok: false, error: "Please log in to create activities." },
+      { status: 401 }
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
