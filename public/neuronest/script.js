@@ -357,8 +357,59 @@ function share() {
 }
 
 // Builds the activity editor summary screen.
-function editor() { return shell(head('Edit activity', 'Make changes before your students begin.') + '<div class="card"><h2>' + esc(state.topic || 'Learning activity') + '</h2><p class="muted">' + state.items.length + ' questions generated. Choose Preview to play it.</p><button class="btn primary" data-go="preview">Preview activity</button></div>'); }
+function editor() {
+  if (!state.activity) {
+    return shell(head('Edit activity', 'Open one of your activities first.') + '<div class="card muted">Go to My Activities and press Edit on an activity.</div>');
+  }
+  return shell(head('Edit activity', 'Ask the AI to change this activity, then preview it.') +
+    '<div class="card"><h2>' + esc(state.topic || 'Learning activity') + '</h2><p class="muted">' + state.items.length + ' items.</p>' +
+    '<div class="field"><label for="refineText">What should change?</label><input id="refineText" maxlength="300" placeholder="e.g. Make question 3 harder, or add two more questions"></div>' +
+    '<button class="btn primary" id="refine">✦ Refine with AI</button> <button class="btn outline" data-go="preview">Preview activity</button></div>');
+}
 
+// Sends a change request to the AI, then saves the new version over the old one.
+async function refine() {
+  const text = document.getElementById('refineText').value.trim();
+  if (!text) {
+    toast('Tell the AI what to change');
+    return;
+  }
+  const button = document.getElementById('refine');
+  
+  button.disabled = true;
+  button.textContent = 'Refining...';
+  try {
+    const { data: sessionData } = await sb.auth.getSession();
+    const token = sessionData.session?.access_token;
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (token || '') },
+      body: JSON.stringify({ type: state.activity.type, prompt: text, currentActivity: state.activity })
+    });
+    const result = await response.json();
+    if (!result.ok) {
+      toast(result.error || 'Something went wrong. Your activity is unchanged.');
+      return;
+    }
+    const { error } = await sb.from('activities').update({ content: result.activity, updated_at: new Date().toISOString() }).eq('id', state.savedId);
+    if (error) {
+      toast('Could not save: ' + error.message);
+      return;
+    }
+    state.activity = result.activity;
+    state.items = toItems(result.activity);
+    state.topic = result.activity.title;
+    state.q = 0;
+    state.score = 0;
+    toast('Activity updated');
+    render();
+  } catch {
+    toast('Could not reach the server. Your activity is unchanged.');
+  } finally {
+    button.disabled = false;
+    button.textContent = '✦ Refine with AI';
+  }
+}
 // Reads the demo profile from localStorage or returns the default teacher profile.
 function readProfile() {
   try {
@@ -437,6 +488,7 @@ function bind() {
   });
   document.querySelector('.logout')?.addEventListener('click', () => { sb.auth.signOut(); });
   document.getElementById('generate')?.addEventListener('click', generate);
+    document.getElementById('refine')?.addEventListener('click', refine);
   document.getElementById('profileForm')?.addEventListener('submit', event => {
     event.preventDefault();
     const profileData = {
