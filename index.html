@@ -1,8 +1,42 @@
+<!-- Declares that this document uses the HTML5 standard. -->
 <!doctype html>
+<!-- Starts the document and identifies English as its language. -->
 <html lang="en">
+<!-- Contains metadata and external resource references. -->
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#f5f6fc"><meta name="description" content="Neuronest — create engaging learning activities with AI.">
-<title>Neuronest — AI Learning Activities</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css">
+  <!-- Sets the character encoding to UTF-8. -->
+  <meta charset="UTF-8">
+  <!-- Makes the layout responsive on phones and tablets. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Sets the browser and mobile address-bar theme color. -->
+  <meta name="theme-color" content="#f1f3f9">
+  <!-- Describes the application for search engines and link previews. -->
+  <meta name="description" content="Neuronest - create engaging learning activities with AI.">
+  <!-- Requests a light color scheme for browser controls. -->
+  <meta name="color-scheme" content="light">
+  <!-- Sets the title displayed in the browser tab. -->
+  <title>Neuronest - AI Learning Activities</title>
+  <!-- Preconnects to the Google Fonts origin to reduce font-loading latency. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <!-- Preconnects to the Google Fonts content-delivery origin. -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Loads the Inter font used by the user interface. -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Loads the application stylesheet. -->
+  <link rel="stylesheet" href="style.css">
+<!-- Ends the metadata section. -->
 </head>
-<body><div id="app"></div><div id="toast" class="toast" role="status"></div><script src="script.js"></script></body></html>
+<!-- Starts the visible page body. -->
+<body>
+  <!-- Provides the mount point where script.js renders each application screen. -->
+  <div id="app"></div>
+  <!-- Provides an accessible live region for copy, save, and download messages. -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <!-- Shows a fallback message when JavaScript is disabled. -->
+  <noscript class="noscript-message">Please enable JavaScript to use Neuronest.</noscript>
+  <!-- Loads the client-side application logic after the page containers exist. -->
+  <script src="script.js"></script>
+<!-- Ends the visible page body. -->
+</body>
+<!-- Ends the HTML document. -->
+</html>

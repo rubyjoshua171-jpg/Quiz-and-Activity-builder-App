@@ -1,0 +1,358 @@
+NEURONEST FRONT-END EXPLANATION
+================================
+
+Purpose
+-------
+Neuronest is a static vanilla JavaScript learning-activity demo. The application uses three main front-end files:
+
+1. index.html
+   Provides the browser document shell, metadata, stylesheet reference, application mount point, toast-message region, and script reference.
+
+2. style.css
+   Provides the visual design, responsive layouts, buttons, cards, dashboard, results page, sharing page, QR section, and mobile styles.
+
+3. script.js
+   Provides routing, page rendering, activity generation, local browser storage, scoring, sharing, QR controls, and PDF creation.
+
+This version does not use React for the static front end and does not require a server to display the demo.
+
+
+1. HOW THE APPLICATION STARTS
+-----------------------------
+When the browser opens index.html, it loads style.css and then script.js.
+
+The script finds the element with id="app":
+
+	const app = document.getElementById('app');
+
+That element is the application mount point. JavaScript places the current screen inside it by assigning HTML to app.innerHTML.
+
+The application reads the current URL hash to decide which screen should be displayed. For example:
+
+	index.html#landing
+	index.html#signup
+	index.html#create
+	index.html#preview
+	index.html#results
+	index.html#share
+
+If there is no hash, the landing page is shown.
+
+The render function chooses the correct screen and then calls bind. The bind function attaches click and submit handlers to the newly rendered buttons and forms.
+
+Because the app replaces the contents of #app during navigation, event handlers must be attached after every render. This is why render calls bind each time.
+
+
+2. HOW THE ROUTER WORKS
+-----------------------
+The app uses hash routing instead of a server-side router. The function go(route) changes the browser hash and renders the selected view.
+
+Examples:
+
+	go('signup')
+	go('create')
+	go('preview')
+	go('results')
+	go('share')
+
+Buttons use a data-go attribute:
+
+	<button data-go="signup">Get started free</button>
+
+The bind function finds every element with data-go and connects its click event to go(button.dataset.go).
+
+The appRoutes Set is an allowlist of accepted routes. If an unknown route is requested, the app returns to landing instead of rendering an unexpected page.
+
+The features, how, and faq hashes are treated as landing-page sections. They scroll to the relevant section rather than becoming separate application screens.
+
+
+3. HOW TO CREATE AN ACTIVITY
+----------------------------
+The normal activity flow is:
+
+1. Click Get started free or Sign up.
+2. The signup form opens.
+3. Submit the form.
+4. The demo navigates to the dashboard.
+5. Click Create New Activity.
+6. Choose one of the eight activity types.
+7. Enter a topic.
+8. Choose the number of items and difficulty.
+9. Click Generate Activity.
+10. The generated activity opens in Preview.
+
+The available activity types are:
+
+- Multiple Choice
+- True / False
+- Flashcards
+- Matching Pairs
+- Put in Order
+- Fill in the Blanks
+- Sort into Groups
+- Crossword
+
+The current application uses sample content. It does not call an AI service. The selected type determines which sample question is copied into the activity.
+
+The topic is limited to 120 characters. The number of questions is limited to the supported range of 5 to 15. These limits prevent unexpectedly large client-side data and keep the demo predictable.
+
+
+4. HOW ACTIVITIES ARE STORED
+-----------------------------
+Activities are stored in the browser's localStorage under the key:
+
+	neuroActs
+
+The application reads the stored JSON through readActivities. That function catches malformed JSON and returns an empty list instead of crashing the application.
+
+When an activity is generated, the application adds an object similar to:
+
+	{
+	  title: "Photosynthesis",
+	  type: "mc",
+	  items: [...]
+	}
+
+Then it saves the array with JSON.stringify.
+
+localStorage is only browser storage. It is not a secure database, and users can inspect or change it through browser developer tools. It must not be used for passwords, private records, access tokens, API keys, or sensitive student information.
+
+
+5. HOW PREVIEW AND SCORING WORK
+--------------------------------
+The preview screen displays one item at a time. Each answer is rendered as a button with a data-answer attribute.
+
+When an answer is selected, the application compares the selected answer index with item.correct. If they match, state.score increases.
+
+If more questions remain, state.q increases and the preview is rendered again. After the final question, the app navigates to results.
+
+The results page calculates:
+
+	percentage = score / total questions * 100
+
+The result title changes based on the percentage:
+
+- 80 percent or higher: Excellent Work
+- 50 to 79 percent: Great Job
+- Below 50 percent: Keep Practicing
+
+
+6. HOW THE RESULTS PDF WORKS
+-----------------------------
+The Download PDF button is connected to the download event handler in bind.
+
+The process is:
+
+1. Read the current activity title.
+2. Read the score.
+3. Calculate the percentage.
+4. Read the question count.
+5. Create simple PDF text and PDF objects in JavaScript.
+6. Create a Blob using the MIME type application/pdf.
+7. Create a temporary object URL for the Blob.
+8. Create an invisible download link.
+9. Set the filename to activity-results.pdf.
+10. Programmatically click the link.
+11. Revoke the temporary object URL after the download starts.
+
+The important line is conceptually:
+
+	new Blob([pdf], { type: 'application/pdf' })
+
+The generated PDF is intentionally minimal. It contains the activity title, score, percentage, and question count. It is not generated by a server or a third-party PDF library.
+
+A PDF generated completely in the browser is useful for this static demo, but production systems may use a trusted server or a maintained PDF library for complex documents, branding, tables, fonts, and long reports.
+
+
+7. HOW THE SHARE PAGE WORKS
+----------------------------
+The Share page creates a share URL from the current origin and path:
+
+	location.origin + location.pathname + '#play'
+
+For a hosted site, this can look like:
+
+	https://example.com/index.html#play
+
+For a local file opened directly from the computer, it may look like:
+
+	file:///C:/Users/.../index.html#play
+
+A file:// URL usually cannot be opened by another student's device. To share with students, host the static files using a web server or static hosting service such as GitHub Pages, Netlify, or another approved host.
+
+The URL is placed in the share-link container so it can be copied.
+
+
+8. HOW THE QR CODE WORKS
+-------------------------
+The QR image uses the QR Server image endpoint. The activity URL is URL-encoded and appended to the endpoint's data parameter.
+
+Conceptually:
+
+	https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=ENCODED_URL
+
+The browser displays the resulting image in the QR card.
+
+The QR code stores the activity URL. Scanning the QR code opens that URL, which should load the play route when hosted online.
+
+The QR code requires network access because the current implementation requests the image from the external QR Server service. If the browser is offline or the service is blocked, the QR image may not load.
+
+
+9. HOW QR DOWNLOAD WORKS
+-------------------------
+The Download QR button fetches the QR image URL and converts the response to a Blob.
+
+Then it:
+
+1. Creates an object URL for the image Blob.
+2. Creates an anchor element.
+3. Sets download to neuronest-qr.png.
+4. Clicks the anchor programmatically.
+5. Revokes the object URL.
+
+If fetching is blocked, the code opens the QR image URL instead and shows a fallback message.
+
+
+10. HOW COPY LINK AND COPY QR WORK
+-----------------------------------
+Copy Link uses navigator.clipboard.writeText when supported by the browser.
+
+Copy QR fetches the image, creates a ClipboardItem, and calls navigator.clipboard.write.
+
+Clipboard operations usually require a secure context, such as HTTPS or localhost. They may not work when index.html is opened directly with file://.
+
+The app catches clipboard failures and displays a friendly toast instead of crashing.
+
+
+11. HOW WHATSAPP SHARING WORKS
+-------------------------------
+The WhatsApp button creates a WhatsApp share URL:
+
+	https://wa.me/?text=ENCODED_ACTIVITY_URL
+
+The activity URL is encoded with encodeURIComponent so spaces, punctuation, hash characters, and other special characters do not corrupt the share link.
+
+The safeOpen function validates the URL protocol before opening it. Only http, https, and mailto protocols are accepted.
+
+The link is opened in a new browser tab or window with:
+
+	noopener,noreferrer
+
+These flags reduce the risk of the newly opened page accessing the original window through window.opener.
+
+WhatsApp itself handles the final message delivery. The website does not receive WhatsApp passwords or private messages.
+
+WhatsApp sharing requires WhatsApp or WhatsApp Web to be available on the user's device.
+
+
+12. HOW EMAIL AND FACEBOOK SHARING WORK
+----------------------------------------
+Email uses a mailto URL. It opens the user's configured email application with a subject and message.
+
+Facebook uses Facebook's share dialog URL with the activity URL as the u parameter.
+
+The browser and each external platform control the final sharing experience. Neuronest does not control external platform accounts or credentials.
+
+
+13. SECURITY FEATURES IN THIS STATIC DEMO
+------------------------------------------
+The app includes several defensive client-side practices:
+
+- User-provided text is escaped with esc before being inserted into generated HTML.
+- Routes are checked against an allowlist.
+- localStorage JSON parsing is protected with try/catch.
+- Topic length is limited.
+- Activity count is bounded.
+- External share URLs are checked for allowed protocols.
+- New share windows use noopener and noreferrer.
+- Clipboard and network failures are caught.
+- No passwords are saved by this demo.
+- No API keys are placed in the browser code.
+
+These are useful browser-side protections, but they are not a replacement for backend security.
+
+
+14. SECURITY THAT REQUIRES A BACKEND
+-------------------------------------
+A production application needs a trusted backend for:
+
+- User registration and login.
+- Password hashing using a modern password-hashing algorithm.
+- Session or token management.
+- Authorization checks.
+- Server-side validation.
+- Rate limiting.
+- CSRF protection where applicable.
+- Secure cookies with HttpOnly, Secure, and SameSite settings.
+- Database access control.
+- Encryption for sensitive data.
+- Audit logs.
+- Abuse prevention.
+- File upload validation.
+- Secret and API-key protection.
+
+Anything placed in JavaScript delivered to the browser can be inspected and changed by the user. Therefore, the browser must never be trusted to enforce permissions or protect secrets.
+
+
+15. HOW TO RUN THE APP CORRECTLY
+---------------------------------
+Opening index.html directly may produce file:// links. Those links are useful for local testing but are not suitable for sharing with students.
+
+For local testing, serve the folder with a local web server. Examples include a Visual Studio static-file server, the Live Server extension, or a simple development server.
+
+The app should then be opened through an address similar to:
+
+	http://localhost:3000/index.html
+
+For public use, deploy index.html, script.js, and style.css to a static hosting provider. Then share the hosted https URL rather than a local file path.
+
+
+16. TROUBLESHOOTING
+-------------------
+If buttons do not work:
+
+1. Open the browser developer tools.
+2. Check the Console tab.
+3. Look for JavaScript syntax errors.
+4. Confirm script.js is loaded.
+5. Confirm index.html references script.js using the correct relative path.
+6. Run node --check script.js in a terminal.
+7. Refresh the page after correcting the error.
+
+If the QR image does not appear:
+
+1. Check the internet connection.
+2. Check whether api.qrserver.com is blocked.
+3. Confirm the generated URL is encoded.
+4. Test the page from localhost or HTTPS.
+
+If copying does not work:
+
+1. Use HTTPS or localhost.
+2. Allow clipboard permissions.
+3. Try a supported modern browser.
+4. Use the visible URL as a manual fallback.
+
+If WhatsApp does not open:
+
+1. Confirm the device has WhatsApp or WhatsApp Web access.
+2. Confirm the activity is hosted online.
+3. Check that the generated URL starts with https://.
+4. Check the browser popup blocker.
+
+If the PDF does not download:
+
+1. Check browser download permissions.
+2. Disable a popup or download blocker for the site.
+3. Confirm the results page is loaded.
+4. Confirm script.js has no console errors.
+
+
+17. IMPORTANT LIMITATIONS
+-------------------------
+This is a front-end demonstration. The generation logic is sample-based and does not call an AI model. The authentication screens are visual demo screens and do not authenticate users. localStorage is not a secure database. Share links do not provide access control. The QR image is supplied by an external service. The PDF is generated in the browser.
+
+For a production release, connect the interface to a secure backend and replace the demo authentication, local storage, sample generator, and public share behavior with authenticated server APIs.
+
+
+END OF DOCUMENT
