@@ -37,6 +37,7 @@ It receives a request, checks it, asks the AI for an activity, checks the AI's a
 5. Check the answer: right shape, right type, and the content checks below.
 6. If something is wrong, send the problems back to the AI **once** and check the new answer.
 7. If it is still wrong, return a friendly error. The front end keeps showing the previous version.
+8. On a first request (not a refine), shuffle each multiple choice question's options, so the right answer isn't always in the same place.
 
 ### How to call it
 ```ts
@@ -69,12 +70,13 @@ A bad request (for example no `prompt`) gets a 400 status with a friendly messag
 |---|---|
 | `app/api/generate/route.ts` | The route: checks the request, the fake mode switch, calls the AI, handles errors |
 | `lib/generate/prompt.ts` | The instructions given to the AI, with a rule for each activity type, and the conversation builder |
-| `lib/generate/provider.ts` | Chooses which AI to use, based on `AI_PROVIDER` |
+| `lib/generate/provider.ts` | Chooses which AI to use, based on `AI_PROVIDER`, and shuffles the answers on a first request |
 | `lib/generate/gemini.ts` | The Google Gemini call, with fallback models and a wait-and-retry when the AI is busy |
 | `lib/generate/claude.ts` | The Claude call, kept ready for when we have a Claude key |
 | `lib/generate/retry.ts` | Checks the AI's answer and sends the problems back **once** if there are any |
 | `lib/generate/checks.ts` | The content checker (see below) |
-| `lib/generate/checks.test.ts`, `retry.test.ts` | The automated tests for the checker and the retry |
+| `lib/generate/shuffle.ts` | Shuffles each question's options so the right answer isn't always in the same place (used on a first request, not on a refine) |
+| `lib/generate/checks.test.ts`, `retry.test.ts`, `shuffle.test.ts` | The automated tests for the checker, the retry and the answer shuffling |
 | `shared/schemas.ts` | What each activity type looks like, and the size limits (`LIMITS`) |
 | `shared/generate-contract.ts` | The request and response format |
 | `shared/samples.ts` | The sample activities used by fake mode |
@@ -107,7 +109,7 @@ A bad request (for example no `prompt`) gets a 400 status with a friendly messag
 - **Multiple choice:** exactly 4 options, no repeated option, and the correct answer points to a real option.
 - **Repeats:** no repeated questions, statements, card fronts, matching sides or ordering items.
 
-The checker is covered by 10 automated tests. The retry logic is covered by 4 more, using a pretend AI.
+The checker is covered by 10 automated tests. The retry logic is covered by 4 more, using a pretend AI, and the answer shuffling by 2 more.
 
 ---
 
@@ -149,7 +151,7 @@ The written record of how the database was set up (the table, the four rules and
 ```
 npm test
 ```
-Runs the 14 automated tests (checker and retry). They also run automatically on every pull request, using GitHub Actions (`.github/workflows/tests.yml`).
+Runs the 16 automated tests (checker, retry and answer shuffling). They also run automatically on every pull request, using GitHub Actions (`.github/workflows/tests.yml`).
 
 Extra scripts (they need the test teacher settings):
 
@@ -210,6 +212,6 @@ In Supabase, **Authentication → URL Configuration** allows the live link and `
 
 **Day 4:** built the content checker and the one automatic retry (14 automated tests), and the public read-only loading for `/a/<id>` (3 of 3 checks passed).
 
-**Day 5:** set up automatic tests on pull requests, wrote the test set and the README, got the app deployed on Vercel in fake mode, and added the Gemini provider with fallback models after the supervisor asked groups to use a Google key. The real AI call works locally, and the test set has been run against it.
+**Day 5:** set up automatic tests on pull requests, wrote the test set and the README, got the app deployed on Vercel in fake mode, and added the Gemini provider with fallback models after the supervisor asked groups to use a Google key. The real AI call works locally, and the test set has been run against it. Then the test set showed the AI favours the second option, so I added answer shuffling (2 more tests, 16 in total) and a prompt fix so a refine keeps new content at the same level.
 
 **Still to come:** switch the live site to the real AI, test the Claude call once a Claude key is available, and prepare the demo.

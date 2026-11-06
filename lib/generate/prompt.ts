@@ -3,7 +3,7 @@ import type { GenerateRequest } from "@/shared/generate-contract";
 
 const TYPE_RULES: Record<ActivityType, string> = {
   multiple_choice:
-    "Each question has exactly 4 options and exactly one correct option. Set correctIndex (0 to 3) to the position of the correct option. Never repeat an option. Keep every option short.",
+        "Each question has exactly 4 options and exactly one correct option. Set correctIndex (0 to 3) to the position of the correct option. Never repeat an option. Keep every option short. Never use options like 'all of the above' or 'both A and B', and vary the style of the questions.",
   true_false:
     "Each statement must be clearly true or clearly false. Mix true and false statements. Give a short explanation for each.",
   flashcards:
@@ -21,7 +21,8 @@ export function buildSystemPrompt(type: ActivityType): string {
     "Write plain text only. Never use HTML or Markdown.",
     "Follow the teacher's request: topic, grade level, difficulty and number of items.",
     `The activity type is "${type}". ${TYPE_RULES[type]}`,
-    "If the teacher gives a current activity, change only what they ask for and keep everything else the same.",
+        "If the teacher gives a current activity, change only what they ask for and keep everything else the same.",
+    "Any new items you add must match the grade level and difficulty of the existing items, unless the teacher asks for a different level.",
   ].join("\n");
 }
 

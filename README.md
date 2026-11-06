@@ -68,7 +68,7 @@ POST /api/generate  --->  the AI (Gemini for now)
 | `NEXT_PUBLIC_SUPABASE_URL` | The address of the Supabase project |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The public (publishable) Supabase key. It is safe in the browser because row-level security protects the data. |
 | `SUPABASE_SERVICE_ROLE_KEY` | The secret Supabase key. Server only. Never commit it or share it. |
-| | `ANTHROPIC_API_KEY` | The Claude key. Only needed if `AI_PROVIDER=claude`. Server only. Never commit it or share it. |
+| `ANTHROPIC_API_KEY` | The Claude key. Only needed if `AI_PROVIDER=claude`. Server only. Never commit it or share it. |
 | `TEST_TEACHER1_EMAIL`, `TEST_TEACHER1_PASSWORD`, `TEST_TEACHER2_EMAIL`, `TEST_TEACHER2_PASSWORD` | Two test teacher accounts, used only by the security test scripts |
 | `AI_PROVIDER` | `gemini` (the default) or `claude` |
 | `GEMINI_API_KEY` | The Google AI Studio key. Server only. Never commit it or share it. |
@@ -84,7 +84,7 @@ The whole database setup (the `activities` table, the row-level security rules a
 npm test
 ```
 
-This runs the content checker tests and the retry tests. They also run automatically on every pull request.
+This runs the content checker tests, the retry tests and the answer shuffling tests. They also run automatically on every pull request.
 
 Two extra scripts check the database security. They need the test teacher settings above:
 
@@ -95,14 +95,14 @@ node --env-file=.env.local scripts/test-public.mjs
 
 The first proves that one teacher cannot see, edit, delete or impersonate another teacher's activities. The second proves that a visitor can load one activity by its link but cannot browse the table.
 
-The test set of 10 realistic teacher requests is in `docs/test-set.md`. Run it with `node scripts/run-test-set.mjs` (with the app running and `FAKE_MODE=false`), and rerun it whenever the prompt changes.
+The test set of 10 realistic teacher requests is in `docs/test-set.md`. Run it with `node scripts/run-test-set.mjs` (with the app running and `FAKE_MODE=false`), and rerun it whenever the prompt changes. The script also saves the full answers to `test-set-output.json` (ignored by Git) so they can be read.
 
 ## Project layout
 
 ```
 app/                     screens, templates and the share page (front end)
 app/api/generate/        the /api/generate route
-lib/generate/            prompt, AI calls (Gemini and Claude), content checks, retry
+lib/generate/            prompt, AI calls (Gemini and Claude), content checks, retry, answer shuffling
 lib/supabase/            Supabase client and public activity loading
 shared/                  schemas, request format and sample activities
 supabase/schema.sql      the database setup
@@ -116,6 +116,7 @@ docs/                    team documentation
 - **One schema per activity type, written once in `shared/schemas.ts`.** It is the agreement between the AI, our checks and the templates.
 - **One `correctIndex` for the right answer in multiple choice.** Two correct answers are impossible by design.
 - **The AI never shuffles.** Ordering items and matching pairs arrive in the correct order, and the templates shuffle them.
+- **The right answer is not always in the same place.** The test set showed that the AI favours the second option, so on a first generation the back end shuffles each question's options and moves `correctIndex` with them. A refine keeps the existing order.
 - **AI text is always shown as plain text, never as HTML.** The checker also rejects any HTML in the content.
 - **Checks plus one retry.** The schema guarantees the shape, and our checks catch sense problems (repeated options, empty text, too long, wrong counts). A failed check is sent back to the AI once, then a friendly error is shown and the previous version is kept.
 - **Row-level security from the start.** A teacher can only read and change their own activities. This is tested with two accounts.
@@ -127,7 +128,9 @@ docs/                    team documentation
 
 ## Status
 
-- Working and tested: fake mode, content checks, retry logic (automated tests), row-level security, public activity loading, and the real AI call with Gemini. The fallback models and the wait-and-retry for a busy AI were checked by hand, not by automated tests.
+- Working and tested: fake mode, content checks, retry logic and answer shuffling (automated tests), row-level security, public activity loading, and the real AI call with Gemini. The fallback models and the wait-and-retry for a busy AI were checked by hand, not by automated tests.
+- The 10-request test set has been run against the real AI. See `docs/test-set.md` for the results and the problems found.
+- Known limits: if a teacher asks for more items than the maximum, the app makes the maximum without saying so. A refine can add content that is harder than the rest of the activity.
 - Still to do: switch the live app to the real AI, and test the Claude call once a Claude key is available.
 
 ## Team

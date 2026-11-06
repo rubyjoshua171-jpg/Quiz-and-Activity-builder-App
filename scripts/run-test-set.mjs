@@ -1,3 +1,4 @@
+import { writeFileSync } from "node:fs";
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 
 const tests = [
@@ -40,4 +41,5 @@ for (const [i, t] of tests.entries()) {
   const size = a ? (a.questions ?? a.statements ?? a.cards ?? a.pairs ?? a.items ?? []).length : "-";
   console.log(`${i + 1}. [${t.type}] ${data.ok ? "OK" : "ERROR"} | items: ${size} | ${data.ok ? a.title : data.error}`);
   await new Promise((resolve) => setTimeout(resolve, 6000));
+  writeFileSync("test-set-output.json", JSON.stringify(results, null, 2));
 }
