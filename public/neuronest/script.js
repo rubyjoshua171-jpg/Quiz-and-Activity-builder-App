@@ -273,9 +273,11 @@ async function generate() {
   button.disabled = true;
   button.textContent = 'Generating...';
   try {
+        const { data: sessionData } = await sb.auth.getSession();
+    const token = sessionData.session?.access_token;
     const response = await fetch('/api/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (token || '') },
       body: JSON.stringify({ type: ourType, prompt })
     });
     const result = await response.json();
