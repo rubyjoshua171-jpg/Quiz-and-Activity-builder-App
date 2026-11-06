@@ -34,6 +34,7 @@ POST /api/generate  --->  the AI (Gemini for now)
 - The browser never calls the AI. Every request goes through `/api/generate`.
 - On every refine, the whole current activity is sent, and the whole new version comes back.
 - Only content that passes our checks reaches the teacher.
+- `/api/generate` needs a logged-in teacher. A request without a login token gets a 401 error, so nobody can use up the AI allowance without an account.
 
 ## Tech stack
 

@@ -41,14 +41,18 @@ It receives a request, checks it, asks the AI for an activity, checks the AI's a
 
 ### How to call it
 ```ts
+const { data } = await supabase.auth.getSession();
 const res = await fetch("/api/generate", {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${data.session?.access_token}`,
+  },
   body: JSON.stringify({ type: "multiple_choice", prompt: "Photosynthesis, 3 questions" }),
 });
-const data = await res.json();
-// data.ok is true: use data.activity.
-// data.ok is false: show data.error and keep the previous version.
+const result = await res.json();
+// result.ok is true: use result.activity.
+// result.ok is false: show result.error and keep the previous version.
 ```
 
 ### What you send
@@ -64,6 +68,7 @@ const data = await res.json();
 - `{ ok: false, error }`: a friendly message to show the teacher
 
 A bad request (for example no `prompt`) gets a 400 status with a friendly message. If the AI fails, you get a 500 status with a friendly message, and the details stay on the server.
+A request without a valid login gets a 401 status.
 
 ### Files
 | File | What it holds |
@@ -159,7 +164,7 @@ Extra scripts (they need the test teacher settings):
 |---|---|
 | `node --env-file=.env.local scripts/test-rls.mjs` | One teacher cannot see, edit, delete or impersonate another teacher's activities (6 checks) |
 | `node --env-file=.env.local scripts/test-public.mjs` | A visitor can load one activity by its link but cannot browse the table (3 checks) |
-| `node scripts/run-test-set.mjs` | Sends the 10 realistic teacher requests to `/api/generate` (the app must be running with `FAKE_MODE=false`). See `docs/test-set.md` |
+| `node --env-file=.env.local scripts/run-test-set.mjs.` | Sends the 10 realistic teacher requests to `/api/generate` (the app must be running with `FAKE_MODE=false`). See `docs/test-set.md` |
 
 Rerun the security scripts whenever the database rules change, and the test set whenever the prompt changes.
 
