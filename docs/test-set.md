@@ -33,20 +33,19 @@ Fill this in after each run. Record the date, and what the app actually did.
 
 | # | Date | Result (OK / error) | What the app did | Problems found | Fixed? |
 |---|---|---|---|---|---|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
-| 6 | | | | | |
-| 7 | | | | | |
-| 8 | | | | | |
-| 9 | | | | | |
-| 10 | | | | | |
-
+| 1 | 5 Nov 2026 | OK | Made 10 multiple choice questions, "Photosynthesis Basics" | Count correct (10). Content not yet read in full | |
+| 2 | 5 Nov 2026 | OK | Made 8 true or false statements, "Water Cycle Quiz" | Count correct (8). Content not yet read in full | |
+| 3 | 5 Nov 2026 | OK | Made 12 flashcards, "Cell Biology Basics" | Count correct (12). Content not yet read in full | |
+| 4 | 5 Nov 2026 | OK | Made 8 matching pairs, "Chemical Elements and Symbols" | Count correct (8). Pairings not yet checked | |
+| 5 | 5 Nov 2026 | OK | Made 6 ordering steps, "Making a paper aeroplane" | Count correct (6). Order not yet checked | |
+| 6 | 5 Nov 2026 | OK | Made 5 questions, "Learning about Fractions" | Count correct (5). Not yet checked that it only uses the pasted notes | |
+| 7 | 5 Nov 2026 | OK | Vague request: chose a topic itself and made 3 questions, "Ancient Civilizations" | Gave a sensible result instead of asking what was meant | |
+| 8 | 5 Nov 2026 | OK | Asked for 60 questions, made 30 (our maximum), "Algebra Basics" | Teacher is not told it was capped at 30 | |
+| 9 | 5 Nov 2026 | OK | Refined test 1: now 12 questions (10 plus the 2 added), "Photosynthesis Basics" | Count correct (12). Not yet checked that question 3 became harder | |
+| 10 | 5 Nov 2026 | OK | Made 6 flashcards, "isiZulu Greetings" | Count correct (6). isiZulu not yet checked by a speaker | |
 ## Notes
 
 - Tests 7 and 8 are meant to be awkward. A friendly error is an acceptable result, but a crash, an empty activity or content that breaks a rule is not.
 - Test 9 only means something if test 1 worked, because it refines test 1's result.
 - Read the content, not just the status. The checker catches structure problems (repeated options, empty text, wrong counts), but not factual mistakes. A person must check the answers are correct.
-- The real AI has not been run against this set yet (no API key at the time of writing).
+- The set was run against the real AI (Gemini, using the built-in models) on 5 November 2026. All 10 requests ran without errors. The results table above records what each one produced.
