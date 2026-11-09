@@ -43,6 +43,15 @@ async function loadActivities() {
   savedActivities = data;
 }
 
+// Refreshes saved activities after navigating to a screen that displays them.
+function refreshActivitiesForCurrentRoute() {
+  if (!user || !['dashboard', 'activities'].includes(state.route)) return;
+  const route = state.route;
+  loadActivities().then(() => {
+    if (user && state.route === route) render();
+  });
+}
+
 // Defines the activity types available in the activity builder.
 const types = [
   ['mc', 'Multiple Choice', 'Pick one correct answer from four options.', '▣', 'Plant cells and photosynthesis'],
@@ -130,13 +139,14 @@ function go(route) {
   if (!appRoutes.has(route)) {
     route = 'landing';
   }
-  state.route = route;
+    state.route = route;
   location.hash = route;
+  if (route === 'editor' && state.activity) {
+    state.draft = structuredClone(state.activity);
+  }
   render();
   window.scrollTo(0, 0);
-  if (user && (route === 'dashboard' || route === 'activities')) {
-    loadActivities().then(render);
-  }
+  refreshActivitiesForCurrentRoute();
 }
 
 // Displays a short status message in the accessible toast region.
@@ -357,14 +367,130 @@ function share() {
 }
 
 // Builds the activity editor summary screen.
+// The name of the list inside each activity type.
+const listKey = { multiple_choice: 'questions', true_false: 'statements', flashcards: 'cards', matching: 'pairs', ordering: 'items' };
+
+// The smallest and largest number of items each type may have.
+const limits = { multiple_choice: [3, 30], true_false: [3, 30], flashcards: [3, 40], matching: [3, 12], ordering: [3, 10] };
+
+// An empty item for the Add item button.
+function blankItem(type) {
+  if (type === 'multiple_choice') return { question: '', options: ['', '', '', ''], correctIndex: 0, explanation: '' };
+  if (type === 'true_false') return { statement: '', answer: true, explanation: '' };
+  if (type === 'flashcards') return { front: '', back: '' };
+  if (type === 'matching') return { left: '', right: '' };
+  return '';
+}
+
+// Returns true if any text inside the value is empty.
+function hasEmpty(value) {
+  if (typeof value === 'string') return value.trim() === '';
+  if (Array.isArray(value)) return value.some(hasEmpty);
+  if (value && typeof value === 'object') return Object.values(value).some(hasEmpty);
+  return false;
+}
+
+// Changes one value inside the draft, for example "questions.0.question".
+function setPath(object, path, value) {
+  const keys = path.split('.');
+  let target = object;
+  for (const key of keys.slice(0, -1)) target = target[key];
+  target[keys[keys.length - 1]] = value;
+}
+
+// Checks the draft before saving. Returns a message, or an empty string if it is fine.
+function checkDraft(draft) {
+  if (!draft.title.trim()) return 'The title cannot be empty.';
+  if (!draft.instructions.trim()) return 'The instructions cannot be empty.';
+  const [min, max] = limits[draft.type];
+  const list = draft[listKey[draft.type]];
+  if (list.length < min) return 'Keep at least ' + min + ' items.';
+  if (list.length > max) return 'You can have at most ' + max + ' items.';
+  if (hasEmpty(list)) return 'Please fill in every field.';
+  if (draft.type === 'multiple_choice') {
+    for (const question of draft.questions) {
+      const options = question.options.map(option => option.trim().toLowerCase());
+      if (new Set(options).size !== options.length) return 'Each question needs four different options.';
+    }
+  }
+  return '';
+}
+
+// Builds one labelled text box.
+function textField(label, path, value, max) {
+  return '<div class="field"><label>' + label + '</label><input data-path="' + path + '" maxlength="' + max + '" value="' + esc(value) + '"></div>';
+}
+
+// Builds the up, down and delete buttons for one item.
+function itemControls(index, count) {
+  return '<div>' +
+    '<button class="btn soft small" data-act="up" data-index="' + index + '"' + (index === 0 ? ' disabled' : '') + '>↑ Up</button> ' +
+    '<button class="btn soft small" data-act="down" data-index="' + index + '"' + (index === count - 1 ? ' disabled' : '') + '>↓ Down</button> ' +
+    '<button class="btn outline small" data-act="delete" data-index="' + index + '">Delete</button></div>';
+}
+
+// Builds the editable boxes for every item in the draft.
+function editItems(draft) {
+  const list = draft[listKey[draft.type]];
+  return list.map((item, i) => {
+    let body = '';
+    if (draft.type === 'multiple_choice') {
+      body = textField('Question', 'questions.' + i + '.question', item.question, 200) +
+        item.options.map((option, j) =>
+          '<div class="field"><label>Option ' + (j + 1) + ' <span class="muted">(tick the correct one)</span></label>' +
+          '<div style="display:flex;gap:8px;align-items:center"><input type="radio" name="correct-' + i + '" data-correct="' + i + '" value="' + j + '"' + (item.correctIndex === j ? ' checked' : '') + '>' +
+          '<input style="flex:1" data-path="questions.' + i + '.options.' + j + '" maxlength="80" value="' + esc(option) + '"></div></div>').join('') +
+        textField('Explanation', 'questions.' + i + '.explanation', item.explanation, 200);
+    } else if (draft.type === 'true_false') {
+      body = textField('Statement', 'statements.' + i + '.statement', item.statement, 200) +
+        '<div class="field"><label>Answer</label><select data-tf="' + i + '"><option value="true"' + (item.answer ? ' selected' : '') + '>True</option><option value="false"' + (item.answer ? '' : ' selected') + '>False</option></select></div>' +
+        textField('Explanation', 'statements.' + i + '.explanation', item.explanation, 200);
+    } else if (draft.type === 'flashcards') {
+      body = textField('Front', 'cards.' + i + '.front', item.front, 150) + textField('Back', 'cards.' + i + '.back', item.back, 150);
+    } else if (draft.type === 'matching') {
+      body = textField('Left side', 'pairs.' + i + '.left', item.left, 100) + textField('Right side', 'pairs.' + i + '.right', item.right, 100);
+    } else {
+      body = textField('Item ' + (i + 1), 'items.' + i, item, 100);
+    }
+    return '<div class="card"><h3>Item ' + (i + 1) + '</h3>' + body + itemControls(i, list.length) + '</div>';
+  }).join('');
+}
+
+// Builds the Edit screen: ask the AI, or change anything by hand.
 function editor() {
   if (!state.activity) {
     return shell(head('Edit activity', 'Open one of your activities first.') + '<div class="card muted">Go to My Activities and press Edit on an activity.</div>');
   }
-  return shell(head('Edit activity', 'Ask the AI to change this activity, then preview it.') +
-    '<div class="card"><h2>' + esc(state.topic || 'Learning activity') + '</h2><p class="muted">' + state.items.length + ' items.</p>' +
+  if (!state.draft) state.draft = structuredClone(state.activity);
+  const draft = state.draft;
+  return shell(head('Edit activity', 'Change anything below and press Save, or ask the AI to change it.') +
+    '<div class="card"><h2>Ask the AI</h2><p class="muted">Save your own edits first, because this works from the last saved version.</p>' +
     '<div class="field"><label for="refineText">What should change?</label><input id="refineText" maxlength="300" placeholder="e.g. Make question 3 harder, or add two more questions"></div>' +
-    '<button class="btn primary" id="refine">✦ Refine with AI</button> <button class="btn outline" data-go="preview">Preview activity</button></div>');
+    '<button class="btn primary" id="refine">✦ Refine with AI</button></div>' +
+    '<div class="card"><h2>Title and instructions</h2>' + textField('Title', 'title', draft.title, 100) + textField('Instructions', 'instructions', draft.instructions, 200) + '</div>' +
+    editItems(draft) +
+    '<div class="card"><button class="btn outline" id="addItem">＋ Add item</button> <button class="btn primary" id="saveEdits">Save changes</button> <button class="btn outline" data-go="preview">Preview activity</button></div>');
+}
+
+// Saves the draft over the activity in the database.
+async function saveEdits() {
+  const problem = checkDraft(state.draft);
+  if (problem) {
+    toast(problem);
+    return;
+  }
+  const button = document.getElementById('saveEdits');
+  button.disabled = true;
+  const { error } = await sb.from('activities').update({ content: state.draft, updated_at: new Date().toISOString() }).eq('id', state.savedId);
+  button.disabled = false;
+  if (error) {
+    toast('Could not save: ' + error.message);
+    return;
+  }
+  state.activity = structuredClone(state.draft);
+  state.items = toItems(state.activity);
+  state.topic = state.activity.title;
+  toast('Changes saved');
 }
 
 // Sends a change request to the AI, then saves the new version over the old one.
@@ -401,6 +527,7 @@ async function refine() {
     state.topic = result.activity.title;
     state.q = 0;
     state.score = 0;
+        state.draft = structuredClone(result.activity);
     toast('Activity updated');
     render();
   } catch {
@@ -489,6 +616,30 @@ function bind() {
   document.querySelector('.logout')?.addEventListener('click', () => { sb.auth.signOut(); });
   document.getElementById('generate')?.addEventListener('click', generate);
     document.getElementById('refine')?.addEventListener('click', refine);
+      document.querySelectorAll('[data-path]').forEach(input => input.addEventListener('input', () => setPath(state.draft, input.dataset.path, input.value)));
+  document.querySelectorAll('[data-correct]').forEach(radio => radio.addEventListener('change', () => {
+    state.draft.questions[Number(radio.dataset.correct)].correctIndex = Number(radio.value);
+  }));
+  document.querySelectorAll('[data-tf]').forEach(select => select.addEventListener('change', () => {
+    state.draft.statements[Number(select.dataset.tf)].answer = select.value === 'true';
+  }));
+  document.querySelectorAll('[data-act]').forEach(button => button.onclick = () => {
+    const list = state.draft[listKey[state.draft.type]];
+    const index = Number(button.dataset.index);
+    if (button.dataset.act === 'delete') {
+      list.splice(index, 1);
+    } else {
+      const target = button.dataset.act === 'up' ? index - 1 : index + 1;
+      if (target < 0 || target >= list.length) return;
+      [list[index], list[target]] = [list[target], list[index]];
+    }
+    render();
+  });
+  document.getElementById('addItem')?.addEventListener('click', () => {
+    state.draft[listKey[state.draft.type]].push(blankItem(state.draft.type));
+    render();
+  });
+  document.getElementById('saveEdits')?.addEventListener('click', saveEdits);
   document.getElementById('profileForm')?.addEventListener('submit', event => {
     event.preventDefault();
     const profileData = {
@@ -582,8 +733,11 @@ function handleLocationChange() {
     document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
     return;
   }
-  state.route = appRoutes.has(hash) ? hash : 'landing';
+  const route = appRoutes.has(hash) ? hash : 'landing';
+  const routeChanged = state.route !== route;
+  state.route = route;
   render();
+  if (routeChanged) refreshActivitiesForCurrentRoute();
 }
 
 // Keeps the interface synchronized with browser hash navigation.
