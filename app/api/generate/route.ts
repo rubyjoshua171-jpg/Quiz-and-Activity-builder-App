@@ -8,10 +8,10 @@ import { SAMPLES } from "@/shared/samples";
 import { generateActivity } from "@/lib/generate/provider";
 
 export async function POST(request: Request) {
-    const { user, reason } = await checkRequestUser(request);
+      const { user } = await checkRequestUser(request);
   if (!user) {
     return NextResponse.json<GenerateResponse>(
-      { ok: false, error: `Please log in to create activities. [v3: ${reason}]` },
+            { ok: false, error: "Please log in to create activities." },
       { status: 401 }
     );
   }
