@@ -307,6 +307,10 @@ async function generate() {
     state.items = toItems(result.activity);
     state.topic = result.activity.title;
     state.savedId = saved.id;
+        const made = result.activity[listKey[ourType]].length;
+    if (made !== Number(count)) {
+      toast('We made ' + made + ' items (you asked for ' + count + ').');
+    }
     state.q = 0;
     state.score = 0;
     go('preview');
