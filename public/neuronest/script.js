@@ -226,39 +226,93 @@ function auth(signup) {
 // Builds the dashboard and displays saved activities and summary statistics.
 function dashboard() {
   const activities = readActivities();
-  return shell(head('Welcome back, Teacher!', 'Create, manage and share engaging learning activities.', '<button class="btn primary" data-go="create">＋ Create New Activity</button>') +
-    '<div class="stats">' + [['Activities created', 12 + activities.length], ['Students reached', 248], ['This week', 5], ['Completion rate', '100%']].map(item =>
-      '<div class="stat"><span>' + item[0] + '</span><strong>' + item[1] + '</strong></div>').join('') + '</div>' +
-    '<h2 class="section">Recent Activities</h2>' + rows(activities.slice(-4).reverse()));
+
+  return '<div class="workspace-page">' +
+    '<header class="workspace-top">' +
+      '<button class="workspace-brand" data-go="dashboard"><b>N</b> NEURONEST</button>' +
+      '<nav class="workspace-nav">' +
+        '<button class="active" data-go="dashboard">Home</button>' +
+        '<button data-go="activities">Activities</button>' +
+        '<button data-go="create">Create</button>' +
+      '</nav>' +
+      '<button class="workspace-user" data-go="profile"><b>T</b> Teacher</button>' +
+    '</header>' +
+    '<main class="workspace-main">' +
+      '<section class="dashboard-hero">' +
+        '<span class="hero-kicker">YOUR LEARNING WORKSPACE</span>' +
+        '<h1>Welcome back, Teacher!</h1>' +
+        '<p>Create, manage and share engaging learning activities.</p>' +
+        '<div class="hero-actions">' +
+          '<button class="btn white-btn" data-go="create">＋ Create New Activity</button>' +
+          '<button class="btn hero-secondary" data-go="activities">View Activities</button>' +
+        '</div>' +
+        '<div class="hero-art"><div class="hero-sheet">' +
+          '<span>ACTIVITY PREVIEW</span><strong>Ready to learn?</strong>' +
+          '<div class="hero-line"></div><div class="hero-answer selected"></div>' +
+          '<div class="hero-answer"></div>' +
+        '</div></div>' +
+      '</section>' +
+      '<div class="dashboard-stats">' +
+        [['Activities created', 12 + activities.length, '▣', 'purple'],
+         ['Students reached', 248, '♙', 'green'],
+         ['This week', 5, '↗', 'orange'],
+         ['Completion rate', '100%', '✓', 'green']].map(item =>
+          '<div class="dashboard-stat">' +
+            '<div class="stat-icon ' + item[3] + '">' + item[2] + '</div>' +
+            '<strong>' + item[1] + '</strong><span>' + item[0] + '</span>' +
+          '</div>'
+        ).join('') +
+      '</div>' +
+      '<div class="recent-heading"><h2>Recent Activities</h2><span>Your latest work</span></div>' +
+      rows(activities.slice(-4).reverse()) +
+    '</main>' +
+  '</div>';
 }
 
 // Converts saved activities into dashboard activity rows.
 function rows(items) {
-  if (!items.length) return '<div class="card muted">Your recent activities will appear here. Create your first activity to get started.</div>';
-  return items.map(item => '<div class="activity"><div class="icon">' + (types.find(type => type[0] === item.type)?.[3] || '▣') + '</div>' +
-    '<div class="grow"><h3>' + esc(item.title) + '</h3><p>' + (types.find(type => type[0] === item.type)?.[1] || '') + ' - ' + item.items.length + ' items</p></div>' +
-    '<button class="btn soft small" data-open="' + esc(item.id) + '" data-then="editor">Edit</button><button class="btn outline small" data-open="' + esc(item.id) + '" data-then="share">Share</button></div>').join('');
+  if (!items.length) {
+    return '<div class="card muted empty-activity">Your recent activities will appear here. Create your first activity to get started.</div>';
+  }
+
+  return items.map(item =>
+    '<div class="activity dashboard-activity">' +
+      '<div class="icon activity-icon">' +
+        (types.find(type => type[0] === item.type)?.[3] || '▣') +
+      '</div>' +
+      '<div class="grow"><h3>' + esc(item.title) + '</h3><p>' +
+        (types.find(type => type[0] === item.type)?.[1] || '') +
+        ' - ' + item.items.length + ' items</p></div>' +
+      '<button class="btn soft small" data-open="' + esc(item.id) + '" data-then="editor">Edit</button>' +
+      '<button class="btn outline small" data-open="' + esc(item.id) + '" data-then="share">Share</button>' +
+    '</div>'
+  ).join('');
 }
 
 // Builds the activity-type and activity-settings form.
 function create() {
-  return shell(head('Create a New Activity', 'Choose an activity type, then tell AI what you want to teach.') +
-    '<h2 class="section">1. Choose an activity type</h2><div class="types">' + types.map(type =>
-      '<button class="type ' + (state.type === type[0] ? 'selected' : '') + '" data-type="' + type[0] + '"><div class="icon">' + type[3] + '</div><h3>' + type[1] + '</h3><p>' + type[2] + '</p></button>').join('') +
-    '</div>');
+  return shell('<div class="create-modern">' +
+    '<div class="create-intro"><span class="eyebrow">ACTIVITY BUILDER</span><h1>Create a New Activity</h1><p>Choose an activity type to get started. You can customize it in the next step.</p></div>' +
+    '<div class="create-progress"><span class="active">1</span><i></i><span>2</span><i></i><span>3</span><b>Choose activity type</b></div>' +
+    '<section class="create-card card"><div class="create-card-heading"><div><h2>Choose an activity type</h2><p class="muted">Select the format that works best for your lesson.</p></div><span class="create-count">Step 1 of 3</span></div>' +
+    '<div class="types create-types">' + types.map(type =>
+      '<button class="type ' + (state.type === type[0] ? 'selected' : '') + '" data-type="' + type[0] + '"><div class="icon">' + type[3] + '</div><h3>' + type[1] + '</h3><p>' + type[2] + '</p><span class="type-arrow">→</span></button>').join('') +
+    '</div></section></div>');
 }
 
 // Builds the Figma-style setup screen for the selected activity type.
 function setup() {
   const selected = types.find(type => type[0] === state.type) || types[0];
-  return shell(head('Create ' + selected[1], 'Tell us what you want to teach and we will prepare the activity.', '<button class="btn outline" data-go="create">← Change type</button>') +
-    '<div class="setup-layout"><div class="setup-card card"><div class="setup-title"><div class="icon">' + selected[3] + '</div><div><h2>' + selected[1] + '</h2><p>' + selected[2] + '</p></div></div>' +
+  return shell('<div class="create-modern">' +
+    '<div class="create-intro"><span class="eyebrow">ACTIVITY BUILDER</span><h1>Set up your activity</h1><p>Choose the topic, length, and difficulty for your ' + selected[1] + ' activity.</p></div>' +
+    '<div class="create-progress"><span>1</span><i></i><span class="active">2</span><i></i><span>3</span><b>Activity details</b></div>' +
+    '<div class="setup-layout"><div class="setup-card card"><div class="setup-title"><div class="icon">' + selected[3] + '</div><div><h2>' + selected[1] + '</h2><p>' + selected[2] + '</p></div><button class="btn outline small" data-go="create">← Change type</button></div>' +
     '<div class="field"><label for="topic">What should this activity be about?</label><input id="topic" maxlength="120" value="' + esc(state.topic) + '" placeholder="e.g. Photosynthesis"></div>' +
     '<div class="grid2"><div class="field"><label for="count">Number of questions</label><select id="count"><option value="5">5 questions</option><option value="10" selected>10 questions</option><option value="15">15 questions</option></select></div>' +
     '<div class="field"><label for="difficulty">Difficulty</label><select id="difficulty"><option>Easy</option><option>Medium</option><option>Hard</option></select></div></div>' +
     '<div class="field"><label for="instructions">Additional instructions <span class="muted">(optional)</span></label><textarea id="instructions" rows="4" maxlength="500" placeholder="Add details or learning goals..."></textarea></div>' +
     '<div class="tip">✦ You can review and edit every question after generation.</div><button class="btn primary wide" id="generate">✦ Generate Activity</button></div>' +
-    '<aside class="setup-help card"><h3>Activity preview</h3><div class="icon">' + selected[3] + '</div><h2>' + selected[1] + '</h2><p class="muted">' + selected[2] + '</p><div class="help-row"><span>Questions</span><strong>10</strong></div><div class="help-row"><span>Difficulty</span><strong>Easy</strong></div></aside></div>');
+    '<aside class="setup-help card"><h3>Activity preview</h3><div class="icon">' + selected[3] + '</div><h2>' + selected[1] + '</h2><p class="muted">' + selected[2] + '</p><div class="help-row"><span>Questions</span><strong>10</strong></div><div class="help-row"><span>Difficulty</span><strong>Easy</strong></div></aside></div></div>');
 }
 
 // Creates sample activity items and saves the activity locally.
@@ -359,15 +413,19 @@ function makePdf() {
 
 // Builds the share page, public URL, QR code, and sharing controls.
 function share() {
-    if (!state.savedId) {
-    return shell(head('Share activity', 'Open one of your activities first.') + '<div class="card muted">Go to My Activities and press Share on an activity.</div>');
+  if (!state.savedId) {
+    return shell('<div class="share-modern"><main class="share-main">' +
+      head('Share activity', 'Open one of your activities first.') +
+      '<div class="card muted">Go to My Activities and press Share on an activity.</div></main></div>');
   }
   const url = location.origin + '/a/' + state.savedId;
   const qr = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=12&data=' + encodeURIComponent(url);
-  return shell('<div class="share-page"><div class="share-card"><span class="result-badge">Share activity</span><h1>Your activity is ready to share</h1><p class="muted">Anyone with this link can play your activity.</p>' +
+  return shell('<div class="share-modern"><main class="share-main">' +
+    '<section class="share-hero"><div class="share-check">✓</div><span class="result-badge">Share activity</span><h1>Your activity is ready to share</h1><p>Anyone with this link can play your activity.</p></section>' +
+    '<section class="share-panel">' +
     '<div class="shareurl"><span id="url">' + esc(url) + '</span><button class="btn primary small" id="copy">Copy</button></div>' +
-    '<div class="qr-card"><img id="qr-code" src="' + qr + '" alt="QR code for this activity"><div><h3>Scan to play</h3><p class="muted">Students can scan this code with any phone camera.</p><button class="btn outline small" id="download-qr">Download QR</button><button class="btn soft small" id="copy-qr">Copy QR</button></div></div>' +
-    '<div class="share-options"><button class="share-option" data-share="email">✉ Email</button><button class="share-option" data-share="whatsapp">◉ WhatsApp</button><button class="share-option" data-share="facebook">f Facebook</button><button class="share-option" data-share="native">↗ More options</button></div><button class="btn primary wide" data-go="preview">Preview activity</button></div></div>');
+    '<div class="qr-card reference-qr"><img id="qr-code" src="' + qr + '" alt="QR code for this activity"><div><span class="camera-label">SCAN TO PLAY</span><h3>Share with your students</h3><p class="muted">Students can scan this code with any phone camera.</p><button class="btn outline small" id="download-qr">Download QR</button><button class="btn soft small" id="copy-qr">Copy QR</button></div></div>' +
+    '<span class="share-label">SHARE THIS ACTIVITY</span><div class="share-options"><button class="share-option" data-share="email"><span class="share-social email">✉</span>Email</button><button class="share-option" data-share="whatsapp"><span class="share-social whatsapp">◉</span>WhatsApp</button><button class="share-option" data-share="facebook"><span class="share-social facebook">f</span>Facebook</button><button class="share-option" data-share="native"><span class="share-social more">↗</span>More options</button></div><button class="btn primary wide" data-go="preview">Preview activity</button></section></main></div>');
 }
 
 // Builds the activity editor summary screen.
@@ -568,14 +626,15 @@ function profile() {
 
 // Builds the settings page with preference, notification, and account sections.
 function settings() {
-  return shell(head('Settings', 'Customize your Neuronest experience.') +
+  return shell('<div class="settings-reference-wrap"><main class="reference-main">' +
+    '<section class="settings-hero"><div><h1>Settings</h1><p>Customize your Neuronest experience.</p></div><div class="settings-hero-icon">⚙</div></section>' +
     '<div class="settings-layout"><section class="settings-main card"><div class="settings-heading"><div class="icon">⚙</div><div><h2>Preferences</h2><p class="muted">Choose how the app should work for you.</p></div></div>' +
     '<div class="setting-row"><div><strong>Show activity tips</strong><p class="muted">Display helpful suggestions while creating activities.</p></div><label class="switch"><input id="tipsSetting" type="checkbox" checked><span></span></label></div>' +
     '<div class="setting-row"><div><strong>Save activity history</strong><p class="muted">Keep generated activities available on your dashboard.</p></div><label class="switch"><input id="historySetting" type="checkbox" checked><span></span></label></div>' +
     '<div class="setting-row"><div><strong>Email updates</strong><p class="muted">Receive occasional product and learning updates.</p></div><label class="switch"><input id="emailSetting" type="checkbox"><span></span></label></div>' +
     '<div class="settings-heading settings-heading-spaced"><div class="icon">◉</div><div><h2>Default activity settings</h2><p class="muted">These defaults are used when you create a new activity.</p></div></div>' +
     '<div class="grid2"><div class="field"><label for="defaultDifficulty">Default difficulty</label><select id="defaultDifficulty"><option>Easy</option><option>Medium</option><option>Hard</option></select></div><div class="field"><label for="defaultCount">Default questions</label><select id="defaultCount"><option>5</option><option selected>10</option><option>15</option></select></div></div><button class="btn primary" id="saveSettings">Save settings</button></section>' +
-    '<aside class="settings-side"><div class="card settings-account"><h3>Account</h3><button class="settings-link" data-go="profile">♙ Edit profile <span>›</span></button><button class="settings-link" id="resetDemo">↻ Reset demo data <span>›</span></button><button class="settings-link danger" data-go="landing">⇥ Log out <span>›</span></button></div><div class="card privacy-card"><div class="icon">🔒</div><h3>Your privacy matters</h3><p class="muted">This demo stores preferences and activities locally in your browser. Never enter real passwords or sensitive information.</p></div></aside></div>');
+    '<aside class="settings-side"><div class="card settings-account"><h3>Account</h3><button class="settings-link" data-go="profile">♙ Edit profile <span>›</span></button><button class="settings-link" id="resetDemo">↻ Reset demo data <span>›</span></button><button class="settings-link danger" data-go="landing">⇥ Log out <span>›</span></button></div><div class="card privacy-card"><div class="privacy-icon">🔒</div><h3>Your privacy matters</h3><p>This demo stores preferences and activities locally in your browser. Never enter real passwords or sensitive information.</p></div></aside></div></main></div>');
 }
 
 // Maps route names to the functions that render each screen.
