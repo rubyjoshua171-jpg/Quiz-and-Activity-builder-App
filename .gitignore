@@ -147,6 +147,7 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+test-set-output*.json
 .vs/
 node_modules/
 .next/

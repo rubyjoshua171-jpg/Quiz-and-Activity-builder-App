@@ -1,3 +1,13 @@
+import { writeFileSync } from "node:fs";
+import { createClient } from "@supabase/supabase-js";
+
+const client = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+const { data: login, error: loginError } = await client.auth.signInWithPassword({
+  email: process.env.TEST_TEACHER1_EMAIL,
+  password: process.env.TEST_TEACHER1_PASSWORD,
+});
+if (loginError) throw new Error(`Login failed: ${loginError.message}`);
+const token = login.session.access_token;
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 
 const tests = [
@@ -27,7 +37,7 @@ for (const [i, t] of tests.entries()) {
   try {
     const res = await fetch(`${BASE}/api/generate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
     });
     data = await res.json();
@@ -39,4 +49,6 @@ for (const [i, t] of tests.entries()) {
   const a = data.activity;
   const size = a ? (a.questions ?? a.statements ?? a.cards ?? a.pairs ?? a.items ?? []).length : "-";
   console.log(`${i + 1}. [${t.type}] ${data.ok ? "OK" : "ERROR"} | items: ${size} | ${data.ok ? a.title : data.error}`);
+  await new Promise((resolve) => setTimeout(resolve, 6000));
+  writeFileSync("test-set-output.json", JSON.stringify(results, null, 2));
 }

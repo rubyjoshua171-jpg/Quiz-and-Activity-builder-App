@@ -40,7 +40,7 @@ let state = {
 };
 
 // Allows only known application routes to be rendered.
-const appRoutes = new Set(['landing', 'login', 'signup', 'dashboard', 'activities', 'create', 'editor', 'preview', 'play', 'results', 'share', 'shared', 'profile', 'settings', 'how']);
+const appRoutes = new Set(['landing', 'login', 'signup', 'dashboard', 'activities', 'create', 'setup', 'editor', 'preview', 'play', 'results', 'share', 'shared', 'profile', 'settings', 'how']);
 
 // Identifies landing-page anchors that should scroll instead of changing screens.
 const sections = new Set(['features', 'how', 'faq']);
@@ -170,34 +170,46 @@ function auth(signup) {
 // Builds the dashboard and displays saved activities and summary statistics.
 function dashboard() {
   const activities = readActivities();
-  return shell(head('Welcome back, Teacher!', 'Create, manage and share engaging learning activities.', '<button class="btn primary" data-go="create">＋ Create New Activity</button>') +
-    '<div class="stats">' + [['Activities created', 12 + activities.length], ['Students reached', 248], ['This week', 5], ['Completion rate', '100%']].map(item =>
-      '<div class="stat"><span>' + item[0] + '</span><strong>' + item[1] + '</strong></div>').join('') + '</div>' +
-    '<h2 class="section">Recent Activities</h2>' + rows(activities.slice(-4).reverse()));
+  return shell('<div class="dashboard-modern"><section class="dashboard-hero"><div><span class="hero-kicker">✦ TEACHER WORKSPACE</span><h1>Welcome back,<br>Teacher!</h1><p>Create, manage and share engaging learning activities.</p><div class="hero-actions"><button class="btn white-btn" data-go="create">＋ Create New Activity</button><button class="btn hero-secondary" data-go="profile">View profile</button></div></div><div class="hero-art"><div class="hero-sheet"><span>MULTIPLE CHOICE</span><strong>Photosynthesis</strong><i></i><div class="hero-line"></div><div class="hero-answer"></div><div class="hero-answer selected"></div></div><div class="hero-bubble completion">✓ <strong>100%</strong><small>completion</small></div><div class="hero-bubble reach"><strong>248</strong><small>students reached</small></div></div></section><div class="dashboard-stats">' + [['▣', 'Activities created', 12 + activities.length, 'purple'], ['♧', 'Students reached', 248, 'green'], ['▣', 'This week', 5, 'orange'], ['✓', 'Completion rate', '100%', 'purple']].map(item => '<div class="dashboard-stat"><div class="stat-icon ' + item[3] + '">' + item[0] + '</div><strong>' + item[2] + '</strong><span>' + item[1] + '</span></div>').join('') + '</div><div class="recent-heading"><h2>Recent Activities</h2><span>' + Math.min(activities.length || 4, 4) + ' latest</span></div>' + rows(activities.slice(-4).reverse()) + '</div>');
 }
 
 // Converts saved activities into dashboard activity rows.
 function rows(items) {
-  if (!items.length) return '<div class="card muted">Your recent activities will appear here. Create your first activity to get started.</div>';
-  return items.map(item => '<div class="activity"><div class="icon">' + (types.find(type => type[0] === item.type)?.[3] || '▣') + '</div>' +
-    '<div class="grow"><h3>' + esc(item.title) + '</h3><p>' + (types.find(type => type[0] === item.type)?.[1] || '') + ' - ' + item.items.length + ' items</p></div>' +
-    '<button class="btn soft small" data-go="editor">Edit</button><button class="btn outline small" data-go="share">Share</button></div>').join('');
+  if (!items.length) return '<div class="activity empty-activity">Your recent activities will appear here. Create your first activity to get started.</div>';
+  return items.map(item => '<div class="activity dashboard-activity"><div class="activity-icon">' + (types.find(type => type[0] === item.type)?.[3] || '▣') + '</div><div class="grow"><h3>' + esc(item.title) + '</h3><p><span class="activity-type">' + (types.find(type => type[0] === item.type)?.[1] || '') + '</span><span>' + item.items.length + ' items</span><i class="mini-bars"></i></p></div><button class="btn soft small" data-go="editor">Edit</button><button class="btn primary small" data-go="share">↗ Share</button></div>').join('');
 }
 
 // Builds the activity-type and activity-settings form.
 function create() {
-  return shell(head('Create a New Activity', 'Choose an activity type, then tell AI what you want to teach.') +
-    '<h2 class="section">1. Choose an activity type</h2><div class="types">' + types.map(type =>
-      '<button class="type ' + (state.type === type[0] ? 'selected' : '') + '" data-type="' + type[0] + '"><div class="icon">' + type[3] + '</div><h3>' + type[1] + '</h3><p>' + type[2] + '</p></button>').join('') +
-    '</div><div class="card setup-card"><h2>2. Tell us what to create</h2><div class="field"><label>Topic or subject</label><input id="topic" value="' + esc(state.topic) + '" placeholder="e.g. Photosynthesis"></div>' +
-    '<div class="grid2"><div class="field"><label>Number of items</label><select id="count"><option>5</option><option selected>10</option><option>15</option></select></div><div class="field"><label>Difficulty</label><select id="difficulty"><option>Easy</option><option>Medium</option><option>Hard</option></select></div></div>' +
-    '<button class="btn primary" id="generate">✦ Generate Activity</button></div>');
+  return shell('<div class="create-modern"><div class="create-intro"><span class="eyebrow">✦ ACTIVITY BUILDER</span><h1>Create a new activity</h1><p>Choose an activity type and turn your lesson into an engaging learning experience.</p></div><div class="create-progress"><span class="active">1</span><b>Choose a type</b><i></i><span>2</span><b>Customize</b><i></i><span>3</span><b>Generate</b></div><section class="create-card card"><div class="create-card-heading"><div><h2>What would you like to create?</h2><p class="muted">Select the format that best fits your lesson.</p></div><span class="create-count">8 types</span></div><div class="types create-types">' + types.map(type => '<button class="type ' + (state.type === type[0] ? 'selected' : '') + '" data-type="' + type[0] + '"><div class="icon">' + type[3] + '</div><h3>' + type[1] + '</h3><p>' + type[2] + '</p><span class="type-arrow">→</span></button>').join('') + '</div></section></div>');
+}
+
+// Builds the Figma style setup screen for the selected activity type.
+function setup() {
+  const selected = types.find(type => type[0] === state.type) || types[0];
+  return shell(head('Create ' + selected[1], 'Tell us what you want to teach and we will prepare the activity.', '<button class="btn outline" data-go="create">← Change type</button>') +
+    '<div class="setup-layout"><div class="setup-card card"><div class="setup-title"><div class="icon">' + selected[3] + '</div><div><h2>' + selected[1] + '</h2><p>' + selected[2] + '</p></div></div>' +
+    '<div class="field"><label for="topic">What should this activity be about?</label><input id="topic" maxlength="120" value="' + esc(state.topic) + '" placeholder="e.g. Photosynthesis"></div>' +
+    '<div class="grid2"><div class="field"><label for="count">Number of questions</label><select id="count"><option value="5">5 questions</option><option value="10" selected>10 questions</option><option value="15">15 questions</option></select></div>' +
+    '<div class="field"><label for="difficulty">Difficulty</label><select id="difficulty"><option>Easy</option><option>Medium</option><option>Hard</option></select></div></div>' +
+    '<div class="field"><label for="instructions">Additional instructions <span class="muted">(optional)</span></label><textarea id="instructions" rows="4" maxlength="500" placeholder="Add details or learning goals..."></textarea></div>' +
+    '<div class="tip">✦ You can review and edit every question after generation.</div><button class="btn primary wide" id="generate">✦ Generate Activity</button></div>' +
+    '<aside class="setup-help card"><h3>Activity preview</h3><div class="icon">' + selected[3] + '</div><h2>' + selected[1] + '</h2><p class="muted">' + selected[2] + '</p><div class="help-row"><span>Questions</span><strong>10</strong></div><div class="help-row"><span>Difficulty</span><strong>Easy</strong></div></aside></div>');
 }
 
 // Creates sample activity items and saves the activity locally.
 function generate() {
-  state.topic = document.getElementById('topic').value.trim() || types.find(type => type[0] === state.type)[4];
-  state.count = Number(document.getElementById('count').value);
+  const topicInput = document.getElementById('topic');
+  const countInput = document.getElementById('count');
+  const difficultyInput = document.getElementById('difficulty');
+  const topic = topicInput.value.trim();
+  if (topic.length > 120) {
+    toast('Topic must be 120 characters or fewer');
+    return;
+  }
+  state.topic = topic || types.find(type => type[0] === state.type)[4];
+  state.count = Math.min(15, Math.max(5, Number(countInput.value) || 10));
+  state.difficulty = difficultyInput.value;
   const sample = samples[state.type][0];
   state.items = samples[state.type].map(item => ({ ...item })).concat(Array.from({ length: Math.max(0, state.count - 1) }, (_, index) => ({
     ...sample, q: state.topic + ' practice question ' + (index + 2)
@@ -250,24 +262,93 @@ function makePdf() {
 function share() {
   const url = location.origin + location.pathname + '#play';
   const qr = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=12&data=' + encodeURIComponent(url);
-  return shell('<div class="share-page"><div class="share-card"><span class="result-badge">Share activity</span><h1>Your activity is ready to share</h1><p class="muted">Anyone with this link can play your activity.</p>' +
-    '<div class="shareurl"><span id="url">' + esc(url) + '</span><button class="btn primary small" id="copy">Copy</button></div>' +
-    '<div class="qr-card"><img id="qr-code" src="' + qr + '" alt="QR code for this activity"><div><h3>Scan to play</h3><p class="muted">Students can scan this code with any phone camera.</p><button class="btn outline small" id="download-qr">Download QR</button><button class="btn soft small" id="copy-qr">Copy QR</button></div></div>' +
-    '<div class="share-options"><button class="share-option" data-share="email">✉ Email</button><button class="share-option" data-share="whatsapp">◉ WhatsApp</button><button class="share-option" data-share="facebook">f Facebook</button><button class="share-option" data-share="native">↗ More options</button></div><button class="btn primary wide" data-go="preview">Preview activity</button></div></div>');
+  return shell('<div class="share-modern"><section class="share-hero"><div class="share-check">✓</div><span class="hero-kicker">SHARE ACTIVITY</span><h1>Your activity is ready to share</h1><p>Anyone with this link can play your activity.</p></section><section class="share-panel"><div class="shareurl"><span class="link-icon">↗</span><span id="url">' + esc(url) + '</span><button class="btn primary small" id="copy">Copy</button></div><div class="qr-card reference-qr"><img id="qr-code" src="' + qr + '" alt="QR code for this activity"><div><span class="camera-label">▯ Any phone camera</span><h2>Scan to play</h2><p class="muted">Students can scan this code with any phone camera.</p><button class="btn outline small" id="download-qr">↓ Download QR</button><button class="btn soft small" id="copy-qr">▣ Copy QR</button></div></div><span class="share-label">SHARE VIA</span><div class="share-options"><button class="share-option" data-share="email"><b class="share-social email">✉</b><span>Email</span></button><button class="share-option" data-share="whatsapp"><b class="share-social whatsapp">◉</b><span>WhatsApp</span></button><button class="share-option" data-share="facebook"><b class="share-social facebook">f</b><span>Facebook</span></button><button class="share-option" data-share="native"><b class="share-social more">↗</b><span>More options</span></button></div></section></div>');
 }
 
 // Builds the activity editor summary screen.
 function editor() { return shell(head('Edit activity', 'Make changes before your students begin.') + '<div class="card"><h2>' + esc(state.topic || 'Learning activity') + '</h2><p class="muted">' + state.items.length + ' questions generated. Choose Preview to play it.</p><button class="btn primary" data-go="preview">Preview activity</button></div>'); }
 
+// Reads the demo profile from localStorage or returns the default teacher profile.
+function readProfile() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('neuroProfile') || '{}');
+    return {
+      name: typeof saved.name === 'string' ? saved.name : 'Teacher',
+      email: typeof saved.email === 'string' ? saved.email : 'teacher@example.com',
+      role: typeof saved.role === 'string' ? saved.role : 'Teacher',
+      bio: typeof saved.bio === 'string' ? saved.bio : 'Creating better learning experiences, one activity at a time.'
+    };
+  } catch {
+    return { name: 'Teacher', email: 'teacher@example.com', role: 'Teacher', bio: 'Creating better learning experiences, one activity at a time.' };
+  }
+}
+
+// Builds the profile page with personal information and account statistics.
+function profile() {
+  const user = readProfile();
+  const activities = readActivities();
+  return shell('<div class="profile-modern">' + head('Profile', 'Manage your personal information and teacher profile.') +
+    '<div class="profile-layout"><section class="profile-main card"><div class="profile-cover"><div class="profile-avatar">' + esc(user.name.charAt(0).toUpperCase()) + '</div><div><h2>' + esc(user.name) + '</h2><p>' + esc(user.role) + '</p></div><span class="profile-status">Active</span></div>' +
+    '<form id="profileForm"><div class="profile-section"><div><h3>Personal information</h3><p class="muted">This information is saved only in this browser demo.</p></div><div class="grid2"><div class="field"><label for="profileName">Full name</label><input id="profileName" maxlength="80" value="' + esc(user.name) + '"></div><div class="field"><label for="profileEmail">Email address</label><input id="profileEmail" type="email" maxlength="120" value="' + esc(user.email) + '"></div></div><div class="field"><label for="profileRole">Role</label><select id="profileRole"><option ' + (user.role === 'Teacher' ? 'selected' : '') + '>Teacher</option><option ' + (user.role === 'Tutor' ? 'selected' : '') + '>Tutor</option><option ' + (user.role === 'Student' ? 'selected' : '') + '>Student</option></select></div><div class="field"><label for="profileBio">About you</label><textarea id="profileBio" maxlength="240" rows="4">' + esc(user.bio) + '</textarea></div></div><div class="profile-actions"><button class="btn primary" type="submit">Save changes</button><button class="btn outline" type="button" data-go="dashboard">Cancel</button></div></form></section>' +
+    '<aside class="profile-side"><div class="card profile-stat-card"><span class="eyebrow">Your activity</span><div class="profile-stat"><strong>' + activities.length + '</strong><span>Activities created</span></div><div class="profile-stat"><strong>248</strong><span>Students reached</span></div><div class="profile-stat"><strong>100%</strong><span>Completion rate</span></div></div><div class="card profile-note"><div class="icon">✦</div><h3>Keep building</h3><p class="muted">Create activities that make learning more interactive and memorable.</p><button class="btn soft small" data-go="create">Create activity</button></div></aside></div></div>');
+}
+
+// Builds the settings page with preference, notification, and account sections.
+function settings() {
+  return shell('<div class="settings-reference-wrap"><main class="reference-main"><section class="settings-hero"><div><h1>Settings</h1><p>Customize your Neuronest experience.</p></div><div class="settings-hero-icon">☷</div></section><div class="settings-layout"><section class="settings-main card"><div class="settings-heading"><div class="icon">☼</div><div><h2>Preferences</h2><p class="muted">Choose how the app should work for you.</p></div></div>' +
+    '<div class="setting-row"><div><strong>Show activity tips</strong><p class="muted">Display helpful suggestions while creating activities.</p></div><label class="switch"><input id="tipsSetting" type="checkbox" checked><span></span></label></div>' +
+    '<div class="setting-row"><div><strong>Save activity history</strong><p class="muted">Keep generated activities available on your dashboard.</p></div><label class="switch"><input id="historySetting" type="checkbox" checked><span></span></label></div>' +
+    '<div class="setting-row"><div><strong>Email updates</strong><p class="muted">Receive occasional product and learning updates.</p></div><label class="switch"><input id="emailSetting" type="checkbox"><span></span></label></div>' +
+    '<div class="settings-heading settings-heading-spaced"><div class="icon">◉</div><div><h2>Default activity settings</h2><p class="muted">These defaults are used when you create a new activity.</p></div></div>' +
+    '<div class="grid2"><div class="field"><label for="defaultDifficulty">Default difficulty</label><select id="defaultDifficulty"><option>Easy</option><option>Medium</option><option>Hard</option></select></div><div class="field"><label for="defaultCount">Default questions</label><select id="defaultCount"><option>5</option><option selected>10</option><option>15</option></select></div></div><button class="btn primary" id="saveSettings">Save settings</button></section>' +
+    '<aside class="settings-side"><div class="card settings-account"><h3>Account</h3><button class="settings-link" data-go="profile">♙ Edit profile <span>›</span></button><button class="settings-link" id="resetDemo">↻ Reset demo data <span>›</span></button><button class="settings-link danger" data-go="landing">⇥ Log out <span>›</span></button></div><div class="privacy-card"><div class="privacy-icon">♡</div><h3>Your privacy matters</h3><p>This demo stores preferences and activities locally in your browser. Never enter real passwords or sensitive information.</p></div></aside></div></main></div>');
+}
+
 // Maps route names to the functions that render each screen.
-function routes() { return { landing, login: () => auth(false), signup: () => auth(true), dashboard, activities: dashboard, create, editor, preview, play: preview, results, share, shared: share, profile: dashboard, settings: dashboard, how: landing }; }
+function routes() { return { landing, login: () => auth(false), signup: () => auth(true), dashboard, activities: dashboard, create, setup, editor, preview, play: preview, results, share, shared: share, profile, settings, how: landing }; }
 
 // Connects buttons, forms, answer choices, downloads, clipboard actions, and sharing controls.
 function bind() {
   document.querySelectorAll('[data-go]').forEach(button => button.onclick = event => { event.preventDefault(); go(button.dataset.go); });
-  document.querySelectorAll('[data-type]').forEach(button => button.onclick = () => { state.type = button.dataset.type; render(); });
+  document.querySelectorAll('[data-type]').forEach(button => button.onclick = () => { state.type = button.dataset.type; state.topic = ''; go('setup'); });
   document.getElementById('authForm')?.addEventListener('submit', event => { event.preventDefault(); go('dashboard'); });
   document.getElementById('generate')?.addEventListener('click', generate);
+  document.getElementById('profileForm')?.addEventListener('submit', event => {
+    event.preventDefault();
+    const profileData = {
+      name: document.getElementById('profileName').value.trim(),
+      email: document.getElementById('profileEmail').value.trim(),
+      role: document.getElementById('profileRole').value,
+      bio: document.getElementById('profileBio').value.trim()
+    };
+    if (!profileData.name || !profileData.email) {
+      toast('Name and email are required');
+      return;
+    }
+    localStorage.setItem('neuroProfile', JSON.stringify(profileData));
+    toast('Profile saved');
+    render();
+  });
+  document.getElementById('saveSettings')?.addEventListener('click', () => {
+    localStorage.setItem('neuroSettings', JSON.stringify({
+      tips: document.getElementById('tipsSetting').checked,
+      history: document.getElementById('historySetting').checked,
+      email: document.getElementById('emailSetting').checked,
+      difficulty: document.getElementById('defaultDifficulty').value,
+      count: document.getElementById('defaultCount').value
+    }));
+    toast('Settings saved');
+  });
+  document.getElementById('resetDemo')?.addEventListener('click', () => {
+    if (!window.confirm('Reset saved activities and profile data for this browser?')) {
+      return;
+    }
+    localStorage.removeItem('neuroActs');
+    localStorage.removeItem('neuroProfile');
+    localStorage.removeItem('neuroSettings');
+    toast('Demo data reset');
+    render();
+  });
   document.getElementById('retry')?.addEventListener('click', () => { state.q = 0; state.score = 0; go('preview'); });
   document.querySelectorAll('[data-answer]').forEach(button => button.onclick = () => { const item = state.items[state.q]; if (Number(button.dataset.answer) === item.correct) state.score++; if (state.q < state.items.length - 1) { state.q++; render(); } else go('results'); });
   document.getElementById('download')?.addEventListener('click', () => { const link = document.createElement('a'); link.href = URL.createObjectURL(makePdf()); link.download = 'activity-results.pdf'; link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 500); toast('PDF downloaded'); });
@@ -306,7 +387,7 @@ function bind() {
 function render() { const view = routeViews()[state.route] || landing; app.innerHTML = view(); bind(); }
 
 // Returns the route-to-render-function map used by render.
-function routeViews() { return { landing, login: () => auth(false), signup: () => auth(true), dashboard, activities: dashboard, create, editor, preview, play: preview, results, share, shared: share, profile: dashboard, settings: dashboard, how: landing }; }
+function routeViews() { return { landing, login: () => auth(false), signup: () => auth(true), dashboard, activities: dashboard, create, setup, editor, preview, play: preview, results, share, shared: share, profile, settings, how: landing }; }
 
 // Handles browser back and forward navigation through URL hash changes.
 function handleLocationChange() {
